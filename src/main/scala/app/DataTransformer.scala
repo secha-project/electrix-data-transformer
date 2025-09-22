@@ -7,11 +7,10 @@ import org.apache.spark.storage.StorageLevel
 
 
 object DataTransformer extends App {
+    val logPrefix: String = "DataTransformer: "
+
     if (args.length == 1 && args(0) == "--help") {
-        println("Usage: DataTransformer <date-string> <input-path> <output-path>")
-        println("  <date-string> : Date string in format YYYYMMDD")
-        println("  <input-path>  : Path to input CSV files")
-        println("  <output-path> : Path to output Delta Lake tables")
+        printHelp()
         System.exit(0)
     }
 
@@ -24,8 +23,6 @@ object DataTransformer extends App {
     val dateString: String = args(0)
     val inputPath: String = args(1)
     val outputPath: String = args(2)
-
-    val logPrefix: String = "DataTransformer: "
 
 
     val spark : SparkSession= SparkSession
@@ -43,10 +40,10 @@ object DataTransformer extends App {
 
 
     def printHelp(): Unit = {
-        println("Usage: DataTransformer <date-string> <input-path> <output-path>")
-        println("  <date-string> : Date string in format YYYY-MM-DD")
-        println("  <input-path>  : Path to input CSV files")
-        println("  <output-path> : Path to base folder for output Delta Lake tables")
+        println(s"${logPrefix}Usage: DataTransformer <date-string> <input-path> <output-path>")
+        println(s"${logPrefix}  <date-string> : Date string in format YYYYMMDD")
+        println(s"${logPrefix}  <input-path>  : Path to input CSV files")
+        println(s"${logPrefix}  <output-path> : Path to output Delta Lake tables")
     }
 
     def getInputPathDevice(basePath: String, dateString: String): String = {
