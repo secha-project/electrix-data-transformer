@@ -3,7 +3,7 @@
 # Check if SPARK_HOME is set, otherwise set a default path
 if [ -z "${SPARK_HOME}" ]
 then
-    SPARK_HOME=/opt/spark-3.5.6
+    SPARK_HOME=/opt/spark-3.5.3
 fi
 
 LOG_FILE_CURRENT=$(pwd)/data-transformer-output.log

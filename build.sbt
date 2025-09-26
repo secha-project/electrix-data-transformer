@@ -5,7 +5,7 @@ scalaVersion := "2.13.16"
 val MainClass: String = "app.DataTransformer"
 
 val DeltaVersion: String = "3.3.2"
-val SparkVersion: String = "3.5.6"
+val SparkVersion: String = "3.5.3"
 
 Compile / run / mainClass := Some(MainClass)
 Compile / scalacOptions += "-Xlint"
