@@ -38,6 +38,9 @@ object DataTransformer extends App {
     spark.conf.set("spark.databricks.delta.retentionDurationCheck.enabled", false)
     spark.sparkContext.setLogLevel(org.apache.log4j.Level.WARN.toString())
 
+    val schemaName = "secha"
+    spark.sql(s"CREATE SCHEMA IF NOT EXISTS ${schemaName}")
+
 
     def printHelp(): Unit = {
         println(s"${logPrefix}Usage: DataTransformer <date-string> <input-path> <output-path>")
@@ -74,29 +77,46 @@ object DataTransformer extends App {
             return
         }
 
-        // Create Delta table if it doesn't exist, otherwise load the existing table
-        val deltaTable: DeltaTable = DeltaTable
-            .createIfNotExists(spark)
-            .tableName(s"device_${deviceId}")
-            .addColumns(deviceData.schema)
-            .location(getOutputPath(targetPath, deviceId))
-            .execute()
+        val targetFolder: String = getOutputPath(targetPath, deviceId)
 
-        // Add new data, avoiding duplicates
-        deltaTable
-            .as("orig")
-            .merge(
-                deviceData.alias("new"),
-                col("orig.device_id") === col("new.device_id") &&
-                col("orig.timestamp") === col("new.timestamp") &&
-                (
-                    col("orig.event_id") === col("new.event_id") ||
-                    (col("orig.event_id").isNull && col("new.event_id").isNull)
+        val tableName = s"${schemaName}.device_${deviceId}"
+        val tableExists: Boolean = spark.catalog.tableExists(tableName)
+        val oldDataExists: Boolean = try {
+            DeltaTable.isDeltaTable(spark, targetFolder)
+        } catch {
+            case _: Throwable => false
+        }
+
+        // If the table does not exist, create it with the new data
+        if (!tableExists || !oldDataExists) {
+            deviceData
+                .write
+                .format("delta")
+                .mode("overwrite")
+                .option("path", targetFolder)
+                .saveAsTable(tableName)
+        }
+
+        // Load the data from the target folder as a Delta table
+        val deltaTable = DeltaTable.forPath(spark, targetFolder)
+
+        // Update old data with new data, avoiding duplicates
+        if (tableExists && oldDataExists) {
+            deltaTable
+                .as("orig")
+                .merge(
+                    deviceData.alias("new"),
+                    col("orig.device_id") === col("new.device_id") &&
+                    col("orig.timestamp") === col("new.timestamp") &&
+                    (
+                        col("orig.event_id") === col("new.event_id") ||
+                        (col("orig.event_id").isNull && col("new.event_id").isNull)
+                    )
                 )
-            )
-            .whenNotMatched()
-                .insertAll()
-            .execute()
+                .whenNotMatched()
+                    .insertAll()
+                .execute()
+        }
 
         // Optimize the table
         deltaTable
