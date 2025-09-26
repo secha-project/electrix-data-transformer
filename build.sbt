@@ -1,6 +1,6 @@
 name := "data-transformer"
 version := "1.0.0"
-scalaVersion := "2.13.16"
+scalaVersion := "2.12.20"
 
 val MainClass: String = "app.DataTransformer"
 
