@@ -119,13 +119,13 @@ object DataTransformer extends App {
         }
 
         // Optimize the table
-        deltaTable
-            .optimize()
-            .executeCompaction()
+        // deltaTable
+        //     .optimize()
+        //     .executeCompaction()
 
 
         println(s"${logPrefix}- ${deviceData.count()} data rows stored for device ${deviceId}")
-        println(s"${logPrefix}  - ${deltaTable.toDF.count()} data rows in total for device ${deviceId}")
+        // println(s"${logPrefix}  - ${deltaTable.toDF.count()} data rows in total for device ${deviceId}")
     }
 
 
