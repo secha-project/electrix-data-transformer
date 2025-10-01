@@ -24,6 +24,9 @@ object DataTransformer extends App {
     val inputPath: String = args(1)
     val outputPath: String = args(2)
 
+    val checkTable: Boolean = System.getenv("CHECK_DELTA_TABLE") == "true"
+    val fullRowCount: Boolean = System.getenv("VERBOSE_ROW_COUNT") == "true"
+
 
     val spark : SparkSession= SparkSession
         .builder()
@@ -44,7 +47,7 @@ object DataTransformer extends App {
 
     def printHelp(): Unit = {
         println(s"${logPrefix}Usage: DataTransformer <date-string> <input-path> <output-path>")
-        println(s"${logPrefix}  <date-string> : Date string in format YYYYMMDD")
+        println(s"${logPrefix}  <date-string> : Date string in format YYYY-MM-DD")
         println(s"${logPrefix}  <input-path>  : Path to input CSV files")
         println(s"${logPrefix}  <output-path> : Path to output Delta Lake tables")
     }
@@ -88,7 +91,7 @@ object DataTransformer extends App {
         }
 
         // If the table does not exist, create it with the new data
-        if (!tableExists || !oldDataExists) {
+        if (!oldDataExists || (checkTable && !tableExists)) {
             deviceData
                 .write
                 .format("delta")
@@ -101,7 +104,7 @@ object DataTransformer extends App {
         val deltaTable = DeltaTable.forPath(spark, targetFolder)
 
         // Update old data with new data, avoiding duplicates
-        if (tableExists && oldDataExists) {
+        if (oldDataExists && (!checkTable || tableExists)) {
             deltaTable
                 .as("orig")
                 .merge(
@@ -118,14 +121,10 @@ object DataTransformer extends App {
                 .execute()
         }
 
-        // Optimize the table
-        // deltaTable
-        //     .optimize()
-        //     .executeCompaction()
-
-
         println(s"${logPrefix}- ${deviceData.count()} data rows stored for device ${deviceId}")
-        // println(s"${logPrefix}  - ${deltaTable.toDF.count()} data rows in total for device ${deviceId}")
+        if (fullRowCount) {
+            println(s"${logPrefix}  - ${deltaTable.toDF.count()} data rows in total for device ${deviceId}")
+        }
     }
 
 
