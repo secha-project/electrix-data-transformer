@@ -1,3 +1,3 @@
 #!/bin/bash
 
-sbt clean compile assembly
+sbt transformer/clean transformer/compile transformer/assembly
