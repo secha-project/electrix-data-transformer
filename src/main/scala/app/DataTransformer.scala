@@ -24,7 +24,6 @@ object DataTransformer extends App {
     val inputPath: String = args(1)
     val outputPath: String = args(2)
 
-    val checkTable: Boolean = System.getenv("CHECK_DELTA_TABLE") == "true"
     val fullRowCount: Boolean = System.getenv("VERBOSE_ROW_COUNT") == "true"
 
 
@@ -82,29 +81,27 @@ object DataTransformer extends App {
 
         val targetFolder: String = getOutputPath(targetPath, deviceId)
 
-        val tableName = s"${schemaName}.device_${deviceId}"
-        val tableExists: Boolean = spark.catalog.tableExists(tableName)
         val oldDataExists: Boolean = try {
             DeltaTable.isDeltaTable(spark, targetFolder)
         } catch {
             case _: Throwable => false
         }
 
-        // If the table does not exist, create it with the new data
-        if (!oldDataExists || (checkTable && !tableExists)) {
+        // If the Delta table does not exist, create it with the new data
+        if (!oldDataExists) {
             deviceData
                 .write
                 .format("delta")
                 .mode("overwrite")
                 .option("path", targetFolder)
-                .saveAsTable(tableName)
+                .save()
         }
 
         // Load the data from the target folder as a Delta table
         val deltaTable = DeltaTable.forPath(spark, targetFolder)
 
         // Update old data with new data, avoiding duplicates
-        if (oldDataExists && (!checkTable || tableExists)) {
+        if (oldDataExists) {
             deltaTable
                 .as("orig")
                 .merge(
