@@ -260,3 +260,4 @@ spark-warehouse/
 
 data/*
 output/*
+.env
