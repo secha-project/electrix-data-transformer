@@ -50,7 +50,6 @@ object DataTransformer extends App {
 
     val spark: SparkSession = SparkSession
         .builder()
-        .appName("power-quality-data-transformer")
         .config("spark.sql.catalog.unity.uri", ucUrl)
         .config("spark.sql.catalog.unity.token", ucToken)
         .config("spark.sql.defaultCatalog", ucCatalog)
@@ -245,7 +244,7 @@ object DataTransformer extends App {
         case false =>
             main_data_df
     })
-        .persist(StorageLevel.MEMORY_ONLY)
+        .persist(StorageLevel.MEMORY_AND_DISK)
 
 
     // Store data for each device
@@ -253,6 +252,7 @@ object DataTransformer extends App {
     createSchemaIfNotExists(s"${ucCatalog}.${ucSchema}")
     devices
         .foreach(deviceId => storeDeviceData(deviceId, full_data_df, outputPath))
+    full_data_df.unpersist()
 
 
     spark.stop()
